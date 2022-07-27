@@ -36,49 +36,51 @@ do
     if [[ "$currenttime" > "$transition" ]] || [[ "$currenttime" < "$endtime" ]] \
     && [[ "$bcurrent" > "$bend" ]];
     then
-        echo inside
+        echo -----
         echo *for*
 
         if [[ "$currenttime" > "$starttime" ]];
         then
-            echo fim
             bcurrent=$bend
             standardset=0
+            echo reached
+            echo "$currenttime c $starttime"
+            echo "$bcurrent <-> $redstart"
+            echo ----
             _adjust "$bcurrent" "$redend"
+        else
+            for i in $(seq 1 $btransitions);
+            do
+                transition=$(date +%H:%M -d "$starttime today -$i"hours)
+                echo "$currenttime c $transition"
+                aux=$(($bend + $i))
+
+                if [[ "$bcurrent" == "$aux" ]];
+                then
+                    echo break
+                    break
+                fi
+
+                if [[ "$currenttime" > "$transition" ]];
+                then
+                    bcurrent=$aux
+                    echo "$bcurrent <-> $redstart"
+                    echo ----
+                    _adjust "$bcurrent" "$redstart"
+                    break
+                fi
+            done
         fi
 
-        #calculate jumps
-        for i in $(seq 1 $btransitions);
-        do
-            transition=$(date +%H:%M -d "$starttime today -$i"hours)
-            echo "$currenttime c $transition"
-            aux=$(($bend + $i))
 
-            if [[ "$bcurrent" == "$aux" ]];
-            then
-                echo break
-                break
-            fi
-
-            if [[ "$currenttime" > "$transition" ]];
-            then
-                bcurrent=$aux
-                echo "$bcurrent <-> $redstart"
-                echo ----
-                _adjust "$bcurrent" "$redstart"
-                break
-            fi
-        done
-
-        sleep 60
-
-    elif [[ "$standardset" == 0 ]] && [[ "$currenttime" > "$endtime" ]];
+    elif [[ "$standardset" == 0 ]] && [[ "$currenttime" < "$endtime" ]];
     then
         standardset=1
         echo standardset
         _adjust "$bstart" "$redstart"
     fi
 
+    echo waiting
     sleep 60
 
 done
