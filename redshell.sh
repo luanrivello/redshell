@@ -6,10 +6,8 @@ h2="06:00"
 
 bstart=0.9
 bend=0.2
-#bcurrent=0"$(echo "scale=2;$bstart -0.01" | bc)"
 bcurrent=$bstart
 btransitions="$(echo "scale=0;($bcurrent -$bend)*100/1" | bc)"
-echo $bcurrent
 
 #0 - custom
 #1 - 1000K #2 - 1500K #3 - 2000K
@@ -31,12 +29,6 @@ temps=("1:0.54:0.42" \
        "1.00000000:1.00000000:1.00000000" \
       )
 
-echo "Temperatures:"
-for i in $(seq 0 12);
-do
-    echo $i: ${temps[$i]}
-done
-
 redstart=1:1:1
 redend=${temps[7]}
 redcurrent=$redend
@@ -48,7 +40,6 @@ endtime=$(date "$dateformat" -d "$h2 today")
 standardset=0
 
 smooth=3
-
 transition=$(date "$dateformat" -d "$starttime today -$(($btransitions*$smooth))minutes")
 
 _adjust() {
@@ -69,39 +60,13 @@ while true
 do
     currenttime=$(date "$dateformat")
 
-    if [[ "$bcurrent" == "$bend" ]];
-    then
-        echo breached
-    fi
-
-    if [[ "$currenttime" > "$transition" ]];
-    then
-        echo $currenttime grt $transition
-    fi
-
-    if [[ "$currenttime" < "$endtime" ]];
-    then
-        echo $currenttime dcr $endtime
-    fi
-
-    if [[ "$standardset" == 0 ]];
-    then
-        echo standard: $standardset
-    fi
-
-    echo \\/
-
     if [[ "$bcurrent" > "$bend" ]] \
     && [[ "$currenttime" > "$transition" ]] && [[ "$currenttime" < "$endtime" ]];
     then
-        echo '<<<for 1if>>>'
-
         if [[ "$currenttime" > "$starttime" ]];
         then
             bcurrent=$bend
             standardset=0
-            echo **reached**
-            echo "$bcurrent <-> $redend"
             _adjust "$bcurrent" "$redend"
 
             waitingtime=$(($(date +%s -d "$endtime") - $(date +%s -d "$starttime")))
@@ -116,24 +81,17 @@ do
 
                 if [[ "$bcurrent" == "$aux" ]];
                 then
-                    echo already set - break
                     break
                 fi
 
-                echo "$currenttime grt $transition"
                 if [[ "$currenttime" > "$transition" ]];
                 then
                     bcurrent=$aux
-
-                    echo "$bcurrent <-> $redstart"
-
                     _adjust "$bcurrent" "$redstart"
-
                     break
                 fi
             done
 
-            echo waiting 6 minutes...
             sleep 360
 
         fi
@@ -143,7 +101,6 @@ do
       || [[ "$currenttime" < "$transition" ]];
     then
         standardset=1
-        echo standardset
 
         if [[ "$currenttime" > "$endtime" ]];
         then
@@ -151,16 +108,13 @@ do
             starttime=$(date "$dateformat" -d "$starttime tomorrow")
             endtime=$(date "$dateformat" -d "$endtime tomorrow")
             transition=$(date "$dateformat" -d "$starttime today -$(($btransitions*$smooth))minutes")
-            echo !times updated!
         fi
 
         _adjust "$bstart" "$redstart"
-
         waitingtime=$(($(date +%s -d "$transition") - $(date +%s -d "$currenttime")))
 
         if [[ $waitingtime > 0 ]];
         then
-            echo waiting $(($waitingtime/60)) minutes...
             sleep $waitingtime
         fi
 
